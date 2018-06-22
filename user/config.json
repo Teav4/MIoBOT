@@ -1,0 +1,12 @@
+{
+  "user": [
+    {
+        "email" : "FACEBOOK_USERNAME_OR_EMAIL",
+        "password" : "YOUR_PASSWORD"
+    }
+  ],
+  "config": {
+      "adminID" : [100023202380649,100006360818148],
+      "selfListen" : true
+  }
+}
