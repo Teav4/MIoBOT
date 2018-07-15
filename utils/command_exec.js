@@ -9,7 +9,7 @@ module.exports = function(command) {
             resolve(stdout);
         });
         dir.on('exit', function(code) {
-            // ...
+            // relax 
         });
     });
 }
