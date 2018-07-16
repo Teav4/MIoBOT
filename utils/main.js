@@ -4,6 +4,7 @@ const login = require('facebook-chat-api');
 const fs = require("fs");
 const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 const log = require("./writeLog");
+const database = require("./database");
 
 let option = {
     listenEvents: true,
@@ -83,61 +84,62 @@ module.exports = function(cookie) {
 
                     
                     if(msg.body.indexOf("->") != -1){
-                        let text = msg.split("->");
-                        
+                        let text = msg.body.split("->");
+                        console.log(text);
+                        database.set_command({
+                            id: msg.threadID,
+                            type: "text",
+                            c: text[0],
+                            e: [{"user": [msg.senderID]},text[1]]
+                        }).then(api.setMessageReaction(":like:", message.messageID));
                     }
                     /* save message into database */
-                    function addThread () {
-                            const database = require("./database");
-                            api.getThreadInfo(msg.threadID,function(err,ret){
-                                if(err) return console.error(err);
-                                database._getdata(msg.senderID,msg.threadID).then(function(e){
-                                    let users = [];
-                                    ret.participantIDs.forEach(el=>{
-                                        users.push({  
-                                            "name":ret.nicknames[`${el}`], 
-                                            "user-id":el
-                                        });
-                                    });
-                                    let groups = []; let flag = false; let i = 0;
-                                    if (e.a != undefined) {
-                                        JSON.parse(e.a.info)["group-invited"].forEach( uf =>{
-                                            i++;
-                                            if (uf["gr-id"] == msg.threadID) { flag = true;/* and */ }
-                                        });
-                                        if (!flag) {
-                                            groups = JSON.parse(e.a.info)["group-invited"];
-                                            groups.push({
-                                                "gr-id": msg.threadID,
-                                                "nick-name": (ret.nicknames[`${msg.senderID}`] == undefined) ? "none" : ret.nicknames[`${msg.senderID}`], 
-                                                "score": 1,
-                                                "level": 0
-                                            }); 
-                                        } else groups = JSON.parse(e.a.info)["group-invited"];
-                                    }
-                                    api.getUserInfo(msg.senderID, (err, res) => {
-                                        if(err) return console.error(err);
-                                        database._add({
-                                            id: msg.senderID,
-                                            name: res[`${msg.senderID}`].name,
-                                            info: {
-                                                "gender": (res[`${msg.senderID}`].gender == 2) ? "male":"female",
-                                                "group-invited": groups, 
-                                                "avt-url": "http://graph.facebook.com/"+ msg.senderID + "/picture?height=720&width=720",
-                                                "profile-url": "https://www.facebook.com/" + res[`${msg.senderID}`].vanity
-                                            },
-                                        },{
-                                            id:msg.threadID,
-                                            name:(ret.isGroup) ? ret.threadName : res[`${msg.senderID}`].name,
-                                            user:users
-                                        });
-                                    });
-                                    
-                                }).catch(log.writeError);
+                    api.getThreadInfo(msg.threadID,function(err,ret){
+                        if(err) return console.error(err);
+                        database._getdata(msg.senderID,msg.threadID).then(function(e){
+                            let users = [];
+                            ret.participantIDs.forEach(el=>{
+                                users.push({  
+                                    "name":ret.nicknames[`${el}`], 
+                                    "user-id":el
+                                });
                             });
-                        }
-                        addThread();
-                    
+                            let groups = []; let flag = false; let i = 0;
+                            if (e.a != undefined) {
+                                JSON.parse(e.a.info)["group-invited"].forEach( uf =>{
+                                    i++;
+                                    if (uf["gr-id"] == msg.threadID) { flag = true;/* and */ }
+                                });
+                                if (!flag) { 
+                                    groups = JSON.parse(e.a.info)["group-invited"];
+                                    groups.push({
+                                        "gr-id": msg.threadID,
+                                        "nick-name": (ret.nicknames[`${msg.senderID}`] == undefined) ? "none" : ret.nicknames[`${msg.senderID}`], 
+                                        "score": 1,
+                                        "level": 0
+                                    }); 
+                                } else groups = JSON.parse(e.a.info)["group-invited"];
+                            }
+                            api.getUserInfo(msg.senderID, (err, res) => {
+                                if(err) return console.error(err);
+                                database._add({
+                                    id: msg.senderID,
+                                    name: res[`${msg.senderID}`].name,
+                                    info: {
+                                        "gender": (res[`${msg.senderID}`].gender == 2) ? "male":"female",
+                                        "group-invited": groups, 
+                                        "avt-url": "http://graph.facebook.com/"+ msg.senderID + "/picture?height=720&width=720",
+                                        "profile-url": "https://www.facebook.com/" + res[`${msg.senderID}`].vanity
+                                    },
+                                },{
+                                    id:msg.threadID,
+                                    name:(ret.isGroup) ? ret.threadName : res[`${msg.senderID}`].name,
+                                    user:users
+                                });
+                            });
+                            
+                        }).catch(log.writeError);
+                    });
                 }
                 if (msg.type == "message"){
                     /* process an message */

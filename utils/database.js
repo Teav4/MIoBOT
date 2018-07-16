@@ -55,16 +55,38 @@ module.exports._getdata = function(a,b){
         });
     });
 }  
+/* @param
+ * i.id : conversation id
+ * i.type: command type
+ * i.c : [string] command 
+ * i.e : [array] & reply command. example: [{"user":100023202380649},"pong","not pong"]
+ */
 module.exports.set_command = function(i){
-    user_db.serialize(function(){
-        user_db.get("SELECT dataset FROM CUSTOM WHERE conversation = ?",i.id,function(err,e){
-            if (err) console.log(err);
-            if (e = undefined){
-                user_db.run("INSERT INTO CUSTOM (conversation,type,dataset) VALUES (?,?,?)",[i.id,i.type,i.dataset]);
-            } else {
-                user_db.run("UPDATE CUSTOM SET dataset = ? WHERE conversation =?",[i.dataset,i.id]);
-            } 
-        })
+    return new Promise((resolve, reject) => {
+        user_db.serialize(function(){
+            user_db.get("SELECT dataset FROM CUSTOM WHERE conversation = ?",i.id,function(err,e){
+                if (err) throw reject(err);
+                if (e == undefined){
+                    let r = {}; r[`${i.c}`] = i.e;
+                    user_db.run("INSERT INTO CUSTOM (conversation,type,dataset) VALUES (?,?,?)",[i.id,i.type,JSON.stringify(r)]);
+                } else {
+                    let r = JSON.parse(e.dataset);
+                    if (r[`${i.c}`] != undefined){
+                        for(j=1;j<i.e.length;++j){
+                            r[`${i.c}`].push(i.e[j]);
+                        } 
+                        let flag = false;
+                        r[`${i.c}`][0].user.forEach(el => {
+                            if(el == i.e[0].user[0]) flag = true;
+                        });
+                        if (!flag) r[`${i.c}`][0].user.push(i.e[0].user[0]);
+                    } else
+                        r[`${i.c}`] = i.e;
+                        console.log(r);
+                    user_db.run("UPDATE CUSTOM SET dataset = ?,type = ? WHERE conversation =?",[JSON.stringify(r),i.type,i.id]);
+                } 
+            })
+        });
     });
 }
 module.exports.delete_command = function(){
