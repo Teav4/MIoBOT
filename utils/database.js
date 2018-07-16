@@ -82,10 +82,21 @@ module.exports.set_command = function(i){
                         if (!flag) r[`${i.c}`][0].user.push(i.e[0].user[0]);
                     } else
                         r[`${i.c}`] = i.e;
-                        console.log(r);
                     user_db.run("UPDATE CUSTOM SET dataset = ?,type = ? WHERE conversation =?",[JSON.stringify(r),i.type,i.id]);
                 } 
             })
+        });
+    });
+}
+module.exports._getMessage = function(id,m){
+    return new Promise((resolve,reject) => {
+        user_db.serialize(function(){
+            user_db.get("SELECT dataset FROM CUSTOM WHERE conversation = ?",id,function(err,res){
+                if (err) throw reject(err)
+                else 
+                    if(res != undefined) 
+                        resolve(JSON.parse(res.dataset)[`${m}`]);
+            });
         });
     });
 }

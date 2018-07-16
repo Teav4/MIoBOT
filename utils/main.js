@@ -9,7 +9,7 @@ const database = require("./database");
 let option = {
     listenEvents: true,
     logLevel: "warn"
-    ,selfListen: true
+    ,selfListen: false
 }
 
 module.exports = function(cookie) {
@@ -26,8 +26,8 @@ module.exports = function(cookie) {
                         case "ping":
                             return api.sendMessage("pong", msg.threadID);
                         case "test":
-                        
-                            addThread();
+                            console.log(msg);
+                            
                             break;
                         case "check connection":
                             const terminal = await require("./command_exec");
@@ -40,13 +40,24 @@ module.exports = function(cookie) {
                                 attachment: fs.createReadStream(path.join(__dirname,'..','user','data','sticker',random+'.png'))
                             })
                                 .then(a => api.sendMessage(a, msg.threadID));      
-                    }
+                    } 
                     /* bot say ~ */
                     if (msg.body.indexOf("say ") == 0){
-                        /* is a youtube link ? */
-                        if (msg.body.indexOf("https://www.youtube.com") == 4){
+                        const tts = require("./say");
+                        tts(msg.body.slice(4,msg.body.length), function(){
+                            let m = {
+                                body: "",
+                                attachment: fs.createReadStream(__dirname + '/src/say.mp3')
+                            }
+                            api.sendMessage(m, msg.threadID);
+                        });
+                        
+                    }
+                    /* is a youtube link ? */
+                    if (msg.body.indexOf("play ") == 0 || msg.body.indexOf("sing ") == 0){
+                        if (msg.body.indexOf("https://www.youtube.com") == 5 || msg.body.indexOf("https://youtu.be/") == 5 ){
                             const terminal = require("./command_exec");
-                            let url = msg.body.slice(4,msg.body.length);
+                            let url = msg.body.slice(5,msg.body.length);
                             if (url != "") {
                                 terminal('youtube-dl -f mp4 -o "./utils/src/video.mp4" '+ url).then((res) => {
                                     api.sendMessage("chuyển định dạng sang mp3 ... ", msg.threadID);
@@ -63,16 +74,8 @@ module.exports = function(cookie) {
                                     });
                                 });
                             } else {log.warning("url is ''");}
-                        } else {
-                            const tts = require("./say");
-                            tts(msg.body.slice(4,msg.body.length), function(){
-                                let m = {
-                                    body: "",
-                                    attachment: fs.createReadStream(__dirname + '/src/say.mp3')
-                                }
-                                api.sendMessage(m, msg.threadID);
-                            });
                         }
+                            
                     }
                     /* encypt || decrypt */
                     if(msg.body.indexOf("mahoa ") == 0){
@@ -81,17 +84,27 @@ module.exports = function(cookie) {
                     if(msg.body.indexOf("giaima ") == 0){
 
                     }
-
                     
                     if(msg.body.indexOf("->") != -1){
-                        let text = msg.body.split("->");
-                        console.log(text);
-                        database.set_command({
-                            id: msg.threadID,
-                            type: "text",
-                            c: text[0],
-                            e: [{"user": [msg.senderID]},text[1]]
-                        }).then(api.setMessageReaction(":like:", message.messageID));
+                        let ind = msg.body.indexOf("->");
+                        let right = msg.body.slice(msg.body.indexOf("->")+2,msg.body.length);
+                        let left =  msg.body.slice(0,msg.body.indexOf("->"));
+                        if (left !== "" && right !== ""){
+                            let e = [{"user": [msg.senderID]}];
+                            if (right.indexOf("|") != -1){
+                                let arr = right.split("|");
+                                e = e.concat(arr);
+                                console.log(e);
+                            } else 
+                                e.push(right);
+                            database.set_command({
+                                id: msg.threadID,
+                                type: "text",
+                                c: left.trim().toLowerCase(),
+                                e: e
+                            }).catch(console.log);
+                        }
+                        // api.setMessageReaction(":wow:", msg.messageID);
                     }
                     /* save message into database */
                     api.getThreadInfo(msg.threadID,function(err,ret){
@@ -140,10 +153,18 @@ module.exports = function(cookie) {
                             
                         }).catch(log.writeError);
                     });
+                    database._getMessage(msg.threadID,msg.body.toLowerCase())
+                        .then(async function(res){
+                            if(res !== undefined){
+                                let ran = await parseInt((Math.random() * (res.length -1)), 10) + 1;
+                                api.sendMessage(res[ran],msg.threadID);
+                            }
+                            
+                        }).catch(log.writeError);
                 }
                 if (msg.type == "message"){
                     /* process an message */
-                    proc(msg);
+                    proc(msg);                   
                 }  
             });
     });
