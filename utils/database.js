@@ -6,9 +6,10 @@ const path = require('path');
 /* configure database path */
 const userPath = path.join(__dirname,"..","user","data","user.sqlite");
 const groupPath = path.join(__dirname,"..","user","data","group.sqlite");
-const chat_historyPath = path.join(__dirname,"..","user","data","chat-history.sqlite");
+const chat_historyPath = path.join(__dirname,"..","user","data","history.sqlite");
 
 const user_db = new sqlite3.Database(userPath);
+const group_db = new sqlite3.Database(chat_historyPath);
 
 /*@param 
  * a.id : user id 
@@ -44,7 +45,7 @@ module.exports._add = function(a,b){
 module.exports._getdata = function(a,b){
     return new Promise((resolve,reject) => {
         user_db.serialize(function(){
-            user_db.get("SELECT info FROM USER WHERE `user-id` = ?",a,function(err,e){
+            user_db.get("SELECT info,name FROM USER WHERE `user-id` = ?",a,function(err,e){
                 if (err) reject(err) 
                 else
                     user_db.get("SELECT user FROM `GROUP` WHERE `group-id` = ?",b,function(err,f){
@@ -59,7 +60,7 @@ module.exports._getdata = function(a,b){
  * i.id : conversation id
  * i.type: command type
  * i.c : [string] command 
- * i.e : [array] & reply command. example: [{"user":100023202380649},"pong","not pong"]
+ * i.e : [array] & reply command. example: [{"user":[100023202380649]},"pong","not pong"]
  */
 module.exports.set_command = function(i){
     return new Promise((resolve, reject) => {
@@ -94,14 +95,42 @@ module.exports._getMessage = function(id,m){
             user_db.get("SELECT dataset FROM CUSTOM WHERE conversation = ?",id,function(err,res){
                 if (err) throw reject(err)
                 else 
-                    if(res != undefined) 
+                    if(res != undefined && res != null) 
                         resolve(JSON.parse(res.dataset)[`${m}`]);
             });
         });
     });
 }
-module.exports.delete_command = function(){
-
+module.exports.delete_command = function(id,m){
+    user_db.serialize(function(){
+        user_db.get("SELECT dataset FROM CUSTOM WHERE conversation = ?",id,function(err,res){
+            if(err) return console.log(err);
+            if (res != undefined){
+                let data = JSON.parse(res.dataset);
+                delete data[`${m}`];
+                user_db.run("UPDATE CUSTOM SET dataset = ? WHERE conversation = ?",[JSON.stringify(data),id]);
+            }
+        })
+    });
 }
-
+module.exports.listen = function(userId,threadID,m,att){
+    group_db.serialize(function(){
+        group_db.run(`CREATE TABLE IF NOT EXISTS "${threadID}" ( ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, SenderID INT DEFAULT NULL, Message TEXT DEFAULT NULL, Attachments TEXT DEFAULT NULL, TIME DATETIME NOT NULL )`,function(){
+            group_db.run(`INSERT INTO "${threadID}" (SenderID, Message, TIME, Attachments) VALUES (?,?,date('now'),?)`, [userId,m,att]);
+        });
+    });
+}
+module.exports.last_msg = function(userId,threadID){
+    return new Promise((resolve,reject)=>{
+        group_db.serialize(function(){
+            group_db.run(`CREATE TABLE IF NOT EXISTS "${threadID}" ( ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, SenderID INT DEFAULT NULL, Message TEXT DEFAULT NULL, Attachments TEXT DEFAULT NULL, TIME DATETIME NOT NULL )`,function(){
+                    group_db.each(`SELECT Message FROM "${threadID}" WHERE SenderID = "${userId}" ORDER BY ID DESC`,(err,row)=>{
+                        if(err) throw reject(err)
+                            else 
+                        resolve(row.Message);
+                    });
+            })
+        });
+    });
+}
 
