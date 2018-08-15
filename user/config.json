@@ -1,8 +1,8 @@
 {
   "user": [
     {   
-        "email" : "FACEBOOK_USERNAME_OR_EMAIL",
-        "password" : "YOUR_PASSWORD"
+        "email" : "#",
+        "password" : "#"
     }
   ],
   "config": {

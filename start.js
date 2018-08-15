@@ -18,9 +18,9 @@ function script(data) {
     } else {
         log.warning("Đang tạo file cookies ... ");
             const login = require('facebook-chat-api');
-            login({email: data.user[0].email, password: data.user[0].password}, (err, api) => {
+            login({email: data.user[0].email, password: data.user[0].password}, (err, bot) => {
                 if(err) return console.error(err);
-                fs.writeFileSync('./user/session.json', JSON.stringify(api.getAppState()));
+                fs.writeFileSync('./user/session.json', JSON.stringify(bot.getAppState()));
                 script(data);
             });
     }

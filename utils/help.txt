@@ -1,0 +1,62 @@
+command list:
+-----
+*gửi văn bản bằng giọng nói: (text to speech)
+vn:    
+    say <text>
+jap(tiếng nhật)):  
+    say jp <text>
+eng(tiếng anh):
+    say en <text>
+korean(tiếng hàn):
+    say ko <text>
+ví dụ: say en hello
+-----
+*play music:
+play <youtube link>
+_ hoặc 
+sing <youtube link>
+
+ví dụ: play https://youtu.be/2ekJDfX_13s
+_____
+*tự động trả lời:
+văn bản(text): 
+    <a> -> <b>
+    ví dụ: hello -> hi
+_ đặt nhiều câu trả lời cho câu hỏi(random): 
+    <a> -> <b> | <c> | <d>
+    ví dụ: 1+1= -> 2 | 3 | 4
+nhãn dán(sticker): 
+    set sticker <a>
+    ví dụ: set sticker hello
+_____
+* xóa một câu lệnh (không phải mặc định)
+    del <a>
+    ví dụ: del hello 
+_____
+* mã hóa một đoạn văn bản:
+    encode <text>
+* giải mã:
+    decode <code>
+* giải mã và thực thi:
+    parse <code>    
+-----
+    send sticker, @sticker, <(") hoặc 🍀
+* gửi một nhãn dán bất kì.     
+_____
+    .cmd 
+*xem tất cả các câu lệnh được đặt thêm trong group  
+-----
+    check connection
+*xem trạng thái kết nối
+-----
+    prefix
+*xem prefix
+-----
+* xem xếp hạng thành viên trong group (hiện đã bị lỗi)
+    ranking 
+-----
+    ping 
+-> pong
+-----
+    .lenny
+->  ( ͡° ͜ʖ ͡°)        

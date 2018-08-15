@@ -133,4 +133,25 @@ module.exports.last_msg = function(userId,threadID){
         });
     });
 }
-
+module.exports.manager = function(threadID,aut = true){
+    return new Promise((resolve,reject)=>{
+        user_db.get("SELECT dataset FROM CUSTOM WHERE conversation = ?",threadID,(err,res)=>{
+            if(err) throw reject(err);
+            let str = ""
+            if(res != undefined){
+                let data = JSON.parse(res.dataset)
+                for (let key in data){
+                    if (aut)
+                        str=str+data[key][0].user+": \n"+key+" -> "
+                    else 
+                        str=str+key+" -> ";
+                    for(let i = 1;i<data[key].length;++i){
+                        str=(i == data[key].length -1)?str+data[key][i] + ".\n":str+data[key][i] + ", "
+                    }
+                    str=str+"---------------\n"
+                }
+                resolve(str.slice(0,str.length-16));
+            }
+        })
+    });
+}
